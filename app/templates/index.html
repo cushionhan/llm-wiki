@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>idai server</title>
+    <link rel="stylesheet" href="/static/site.css">
+</head>
+<body>
+    <main class="layout">
+        <section class="hero">
+            <p class="eyebrow">Obsidian LLM Wiki</p>
+            <h1>raw 업로드와 wiki 조회를 위한 서버 MVP</h1>
+            <p class="lede">
+                이 페이지는 원천자료 등록과 wiki 기반 query를 한 화면에서 수행하기 위한 관리 UI입니다.
+                업로드 결과는 <code>raw/</code>, <code>wiki/</code>, SQLite 메타데이터에 반영됩니다.
+            </p>
+        </section>
+
+        <section class="panel-grid">
+            <section class="panel">
+                <h2>Source Upload</h2>
+                <form id="source-form">
+                    <label>
+                        <span>Title</span>
+                        <input type="text" name="title" required>
+                    </label>
+                    <label>
+                        <span>Source Type</span>
+                        <select name="source_type">
+                            <option value="url">url</option>
+                            <option value="pdf">pdf</option>
+                            <option value="image">image</option>
+                            <option value="freeform_text">freeform_text</option>
+                            <option value="meeting_note">meeting_note</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>Source URL</span>
+                        <input type="url" name="source_url" placeholder="https://example.com">
+                    </label>
+                    <label>
+                        <span>Tags</span>
+                        <input type="text" name="tags" placeholder="llm-wiki, research">
+                    </label>
+                    <label>
+                        <span>Description</span>
+                        <textarea name="description" rows="4" placeholder="업로드 자료의 짧은 설명"></textarea>
+                    </label>
+                    <label>
+                        <span>Body Text</span>
+                        <textarea name="body_text" rows="8" placeholder="텍스트 source라면 여기에 본문을 넣습니다"></textarea>
+                    </label>
+                    <label>
+                        <span>File</span>
+                        <input type="file" name="upload">
+                    </label>
+                    <button type="submit">Upload Source</button>
+                </form>
+                <pre id="source-result" class="result-box">업로드 결과와 job 상태가 여기에 표시됩니다.</pre>
+            </section>
+
+            <section class="panel">
+                <h2>Query Wiki</h2>
+                <form id="query-form">
+                    <label>
+                        <span>Query</span>
+                        <input type="text" name="query" required placeholder="Karpathy pattern">
+                    </label>
+                    <label>
+                        <span>Limit</span>
+                        <input type="number" name="limit" min="1" max="10" value="5">
+                    </label>
+                    <button type="submit">Run Query</button>
+                </form>
+                <pre id="query-result" class="result-box">query 결과가 여기에 표시됩니다.</pre>
+            </section>
+        </section>
+
+        <section class="panel-grid">
+            <section class="panel">
+                <h2>Recent Sources</h2>
+                <ul class="list">
+                    {% for source in recent_sources %}
+                    <li>
+                        <strong>{{ source.title }}</strong>
+                        <span>{{ source.source_type }} | {{ source.created_at }}</span>
+                    </li>
+                    {% else %}
+                    <li>아직 등록된 source가 없습니다.</li>
+                    {% endfor %}
+                </ul>
+            </section>
+
+            <section class="panel">
+                <h2>Wiki Pages</h2>
+                <ul class="list">
+                    {% for page in wiki_pages %}
+                    <li>
+                        <strong>{{ page.title }}</strong>
+                        <span>{{ page.path }}</span>
+                    </li>
+                    {% else %}
+                    <li>위키 페이지가 없습니다.</li>
+                    {% endfor %}
+                </ul>
+            </section>
+        </section>
+    </main>
+
+    <script>
+        const sourceForm = document.getElementById("source-form");
+        const sourceResult = document.getElementById("source-result");
+        const queryForm = document.getElementById("query-form");
+        const queryResult = document.getElementById("query-result");
+
+        async function pollJob(jobId, sourceId) {
+            while (true) {
+                const [jobResponse, sourceResponse] = await Promise.all([
+                    fetch(`/api/jobs/${jobId}`),
+                    fetch(`/api/sources/${sourceId}`)
+                ]);
+
+                const job = await jobResponse.json();
+                const source = await sourceResponse.json();
+                sourceResult.textContent = JSON.stringify({ job, source }, null, 2);
+
+                if (job.status === "completed" || job.status === "failed") {
+                    break;
+                }
+
+                await new Promise((resolve) => setTimeout(resolve, 1000));
+            }
+        }
+
+        sourceForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            sourceResult.textContent = "업로드 중...";
+
+            const formData = new FormData(sourceForm);
+            const response = await fetch("/api/sources", {
+                method: "POST",
+                body: formData
+            });
+
+            const payload = await response.json();
+            sourceResult.textContent = JSON.stringify(payload, null, 2);
+            if (payload.job?.id && payload.source?.id) {
+                await pollJob(payload.job.id, payload.source.id);
+            }
+        });
+
+        queryForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            queryResult.textContent = "조회 중...";
+
+            const formData = new FormData(queryForm);
+            const payload = {
+                query: formData.get("query"),
+                limit: Number(formData.get("limit"))
+            };
+
+            const response = await fetch("/api/query", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+            queryResult.textContent = JSON.stringify(result, null, 2);
+        });
+    </script>
+</body>
+</html>

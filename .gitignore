@@ -1,0 +1,8 @@
+.obsidian/cache/
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.DS_Store
+Thumbs.db
+.venv/
+__pycache__/
+storage/
