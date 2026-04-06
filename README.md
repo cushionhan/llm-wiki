@@ -1,4 +1,4 @@
-# idai
+# llm-wiki
 
 Obsidian 문서 기반 LLM wiki를 위한 파일 우선(file-first) 저장소입니다.
 
