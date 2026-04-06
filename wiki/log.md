@@ -46,3 +46,9 @@ sources: []
 - source 업로드를 `queued -> processing -> completed/failed` job 구조로 바꿨다.
 - 앱 시작 시 백그라운드 worker가 실행되고, 미완료 job을 자동으로 재큐잉한다.
 - `.git` 저장소가 있을 경우 ingest 결과 파일만 선택적으로 자동 commit 시도하도록 훅을 추가했다.
+
+## [2026-04-06] ingest | End-to-End Pipeline Validation 2026-04-06
+
+- source_type: freeform_text
+- raw: `raw/sources/2026-04-06-end-to-end-pipeline-validation-2026-04-06-f105f5dd/source.md`
+- wiki: `wiki/sources/end-to-end-pipeline-validation-2026-04-06.md`

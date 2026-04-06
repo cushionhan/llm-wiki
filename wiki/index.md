@@ -25,6 +25,7 @@ sources: []
 ## Sources
 
 - [[sources/karpathy-llm-wiki-links]]: gist와 X 포스트를 바탕으로 정리한 source note.
+- [[sources/end-to-end-pipeline-validation-2026-04-06]]: End-to-End Pipeline Validation 2026-04-06 | 서버 업로드, background ingest, git auto-commit, 원격 push 검증을 위한 운영 기록 source
 
 ## Syntheses
 
